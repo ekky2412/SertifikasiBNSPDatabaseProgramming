@@ -1,0 +1,53 @@
+# SertifikasiBNSPDatabaseProgramming
+
+CREATE TABLE `buku_rezkyputratama`.`kategori` ( `id_kategori` VARCHAR(11) NOT NULL , `kategori` VARCHAR(100) NOT NULL , PRIMARY KEY (`id_kategori`)) ENGINE = InnoDB;
+CREATE TABLE `buku_rezkyputratama`.`buku` ( `id_buku` VARCHAR(11) NOT NULL ,  `id_kategori` VARCHAR(11) NOT NULL ,  `judul` VARCHAR(100) NOT NULL ,  `isbn` VARCHAR(11) NOT NULL ,  `penerbit` VARCHAR(100) NOT NULL ,  `penulis` VARCHAR(100) NOT NULL ,    PRIMARY KEY  (`id_buku`)) ENGINE = InnoDB;
+ALTER TABLE `buku` ADD CONSTRAINT `fk_kategori` FOREIGN KEY (`id_kategori`) REFERENCES `kategori`(`id_kategori`) ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE TABLE `buku_rezkyputratama`.`log_buku` ( `id` INT NOT NULL AUTO_INCREMENT ,  `id_buku` VARCHAR(11) NOT NULL ,  `aksi` VARCHAR(100) NOT NULL ,  `tgl` DATE NOT NULL ,    PRIMARY KEY  (`id`)) ENGINE = InnoDB;
+
+CREATE FUNCTION `totalBuku`(`id_kategori_in` VARCHAR(11)) 
+RETURNS INT(11) 
+BEGIN 
+DECLARE total_buku int(11); 
+SELECT COUNT(buku.id_kategori) INTO total_buku FROM buku WHERE buku.id_kategori=id_kategori_in; RETURN total_buku; 
+END
+
+CREATE VIEW v1 AS
+SELECT kategori.id_kategori, kategori.kategori, totalBuku(buku.id_kategori) AS 'total_Buku' FROM buku INNER JOIN kategori ON buku.id_kategori = kategori.id_kategori
+CREATE VIEW v2 AS
+SELECT id_buku, judul, kategori.kategori, isbn, penerbit, penulis FROM buku INNER JOIN kategori ON kategori.id_kategori = buku.id_kategori
+
+CREATE PROCEDURE `insertKategori`(IN `id_kategori` VARCHAR(11), IN `kategori` VARCHAR(100))
+BEGIN 
+START TRANSACTION; 
+INSERT INTO kategori VALUES(id_kategori,kategori); 
+COMMIT; 
+END
+
+CREATE PROCEDURE `insertBuku` (IN `id_buku` VARCHAR(11), IN `id_kategori` VARCHAR(11), IN `judul` VARCHAR(100), IN `isbn` VARCHAR(11), IN `penerbit` VARCHAR(100), IN `penulis` VARCHAR(100)) 
+BEGIN 
+START TRANSACTION; 
+INSERT INTO buku VALUES (id_buku,id_kategori,judul,isbn,penerbit,penulis); 
+COMMIT; 
+END
+
+CREATE TRIGGER `insertBuku` 
+AFTER INSERT ON `buku` 
+FOR EACH ROW 
+BEGIN 
+INSERT INTO log_buku (id_buku, aksi, tgl) VALUES (NEW.id_buku, 'TAMBAH', CURRENT_TIME); 
+END
+
+CREATE TRIGGER `updateBuku` 
+AFTER UPDATE ON `buku` 
+FOR EACH ROW 
+BEGIN 
+INSERT INTO log_buku (id_buku, aksi, tgl) VALUES (NEW.id_buku, 'UPDATE', CURRENT_TIME); 
+END
+
+CREATE TRIGGER `hapusBuku` 
+AFTER DELETE ON `buku` 
+FOR EACH ROW 
+BEGIN 
+INSERT INTO log_buku (id_buku, aksi, tgl) VALUES (OLD.id_buku, 'HAPUS', CURRENT_TIME); 
+END
